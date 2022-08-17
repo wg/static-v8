@@ -1,0 +1,22 @@
+name: 'copy-archives'
+
+inputs:
+  target:
+    type:     string
+    required: true
+  profile:
+    type:     string
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/upload-artifact@v3
+      with:
+        name: librusty_v8_${{ inputs.profile }}_${{ inputs.target }}.a
+        path: rusty_v8/target/${{ inputs.target }}/${{ inputs.profile }}/gn_out/obj/librusty_v8.a
+    - uses: actions/upload-artifact@v3
+      with:
+        name: libv8_monolith_${{ inputs.target }}.a
+        path: rusty_v8/target/${{ inputs.target }}/${{ inputs.profile }}/gn_out/obj/v8/libv8_monolith.a
+      if: inputs.profile == 'release'

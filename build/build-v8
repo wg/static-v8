@@ -1,0 +1,70 @@
+#!/bin/bash
+
+set -eu
+
+TARGET=${1-}
+PROFILE=${2-}
+
+if [[ "${TARGET}" == "" || "${PROFILE}" == "" ]]; then
+   echo "usage: $0 <target> <profile>"
+   exit 1
+fi
+
+case "${TARGET}" in
+    aarch64-unknown-linux-musl)
+        ARCH=aarch64
+        V8_CPU=arm64
+    ;;
+    armv7-unknown-linux-musleabihf)
+        ARCH=armv7
+        V8_CPU=arm
+    ;;
+    x86_64-unknown-linux-musl)
+        ARCH=x86_64
+        V8_CPU=x64
+    ;;
+    *)
+        echo "unknown architecture: $1"
+        exit 1
+esac
+
+if read -r -d '' GN_ARGS <<EOF; then :; fi
+clang_use_chrome_plugins=false
+is_clang=false
+is_component_build=false
+is_debug=false
+line_tables_only=false
+treat_warnings_as_errors=false
+use_custom_libcxx=false
+use_glib=false
+custom_toolchain="${PWD}/build:${ARCH}"
+use_sysroot=false
+use_gold=false
+use_lld=false
+v8_static_library=true
+v8_monolithic=true
+v8_use_external_startup_data=false
+target_cpu="${V8_CPU}"
+target_os="linux"
+EOF
+
+if [ "${V8_CPU}" == "arm" ]; then
+    GN_ARGS+=" v8_snapshot_toolchain=\"${PWD}/build:${ARCH}\""
+fi
+
+export TOOLCHAIN="${PWD}/toolchain/bin"
+
+export CC_"${TARGET//[-]/_}"="${TOOLCHAIN}/${TARGET//-unknown}-cc"
+export AR_"${TARGET//[-]/_}"="${TOOLCHAIN}/${TARGET//-unknown}-ar"
+
+export OUTPUT="${PWD}/rusty_v8/target/${TARGET}/${PROFILE}"
+
+export GN_ARGS="${GN_ARGS}"
+export V8_FROM_SOURCE=1
+
+echo "building v8 for ${TARGET}"
+
+cd rusty_v8 || exit 1
+cargo build --target "${TARGET}" --profile "${PROFILE//debug/dev}"
+
+ninja -C "${OUTPUT}/gn_out" v8_monolith

@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -eu
+
+TARGET=${1-}
+
+if [[ "${TARGET}" == "" ]]; then
+   echo "usage: $0 <target>"
+   exit 1
+fi
+
+ARCHIVES="${PWD}/archives"
+
+DEBUG="${PWD}/rusty_v8/target/${TARGET}/debug/gn_out/obj"
+RELEASE="${PWD}/rusty_v8/target/${TARGET}/release/gn_out/obj"
+
+mkdir -p "${ARCHIVES}"
+
+cp "${DEBUG}/librusty_v8.a"         "${ARCHIVES}/librusty_v8_debug_${TARGET}.a"
+cp "${RELEASE}/librusty_v8.a"       "${ARCHIVES}/librusty_v8_release_${TARGET}.a"
+cp "${RELEASE}/v8/libv8_monolith.a" "${ARCHIVES}/libv8_monolith_${TARGET}.a"

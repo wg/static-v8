@@ -1,0 +1,48 @@
+name: 'setup'
+
+inputs:
+  packages:
+    type:     string
+    required: true
+  target:
+    type:     string
+    required: true
+
+outputs:
+  concurrency:
+    value: ${{ steps.concurrency.outputs.concurrency }}
+  toolchain:
+    value: ${{ steps.toolchain.outputs.toolchain }}
+
+runs:
+  using: composite
+  steps:
+    - run: |
+        sudo apt-get update  -y
+        sudo apt-get install -y ${{ inputs.packages }}
+      shell: bash
+
+    - id: concurrency
+      run: |
+        NPROC=$(($(getconf _NPROCESSORS_ONLN) - 1))
+
+        echo "::notice ::concurrency level: ${NPROC}"
+
+        echo "MAKEFLAGS=-j ${NPROC}"  >> $GITHUB_ENV
+        echo "NINJAFLAGS=-j ${NPROC}" >> $GITHUB_ENV
+
+        echo "::set-output name=concurrency::${NPROC}"
+      shell: bash
+
+    - id: toolchain
+      run: |
+        TOOLCHAIN=$(cat rusty_v8/rust-toolchain)
+        echo "::set-output name=toolchain::${TOOLCHAIN}"
+      shell: bash
+
+    - name: "install rust toolchain"
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ steps.toolchain.outputs.toolchain }}
+        target: ${{ matrix.target }}
+

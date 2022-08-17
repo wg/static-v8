@@ -1,0 +1,37 @@
+name: 'build-v8'
+
+inputs:
+  target:
+    type:     string
+    required: true
+  profile:
+    type:     string
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - id: setup
+      run: |
+        SUBMODULES=$(git submodule status | shasum -a1 | cut -d ' ' -f1)
+
+        KEY="cache"
+        KEY+="-${{ inputs.target }}"
+        KEY+="-${SUBMODULES}"
+        KEY+="-${{ hashFiles('config.mak') }}"
+
+        DIR="${{ github.workspace }}/cache"
+
+        echo "::set-output name=cache-key::${KEY}"
+        echo "::set-output name=cache-dir::${DIR}"
+      shell: bash
+    - uses: actions/cache@v3
+      id:   cache
+      with:
+        path: ${{ steps.setup.outputs.cache-dir }}
+        key:  ${{ steps.setup.outputs.cache-key }}
+    - name: "build v8"
+      run: build/build-v8 ${{ inputs.target }} ${{ inputs.profile }}
+      env:
+        CCACHE_DIR: ${{ steps.setup.outputs.cache-dir }}
+      shell: bash

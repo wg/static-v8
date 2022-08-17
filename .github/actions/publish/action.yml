@@ -1,0 +1,17 @@
+name: 'publish'
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/download-artifact@v3
+      with:
+        path: assets
+    - run: |
+        ls -lR assets
+        for asset in $(ls assets); do
+            cp assets/$asset/*.a $asset
+        done
+      shell: bash
+    - uses: softprops/action-gh-release@v1
+      with:
+        files: "*.a"

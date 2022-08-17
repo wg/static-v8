@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -eu
+
+if [ "$1" == "" ]; then
+   echo "usage: $0 <target>"
+   exit 1
+fi
+
+TARGET=${1//-unknown}
+OUTPUT=${PWD}/toolchain
+
+if [ -f "${OUTPUT}/bin/${TARGET}-gcc" ]; then
+    echo "toolchain for ${TARGET} present"
+    exit 0
+fi
+
+echo "building toolchain for ${TARGET}"
+
+cp config.mak musl-cross-make
+
+make -C musl-cross-make TARGET="${TARGET}" &> "build-${TARGET}.log"
+make -C musl-cross-make TARGET="${TARGET}" install OUTPUT="${OUTPUT}"

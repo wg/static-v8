@@ -1,0 +1,30 @@
+name: 'build-tools'
+
+inputs:
+  target:
+    type:     string
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - id: setup
+      run: |
+        SUBMODULES=$(git submodule status | shasum -a1 | cut -d ' ' -f1)
+
+        KEY="tools-${{ runner.os }}-${{ runner.arch }}"
+        KEY+="-${{ inputs.target }}"
+        KEY+="-${SUBMODULES}"
+        KEY+="-${{ hashFiles('config.mak') }}"
+
+        echo "::set-output name=cache-key::${KEY}"
+      shell: bash
+    - uses: actions/cache@v3
+      id:   cache
+      with:
+        path: toolchain
+        key: ${{ steps.setup.outputs.cache-key }}
+    - name: "build musl cross compiler"
+      run: build/build-tools ${{ inputs.target }}
+      shell: bash
+      if: steps.cache.outputs.cache-hit != 'true'

@@ -1,0 +1,57 @@
+name: build
+
+on:
+  push:
+    branches: "*"
+    tags: "v[0-9]+.[0-9]+.[0-9]+*"
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        target:
+          - aarch64-unknown-linux-musl
+          - armv7-unknown-linux-musleabihf
+          - x86_64-unknown-linux-musl
+        profile:
+          - debug
+          - release
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: "set up environment"
+        uses: ./.github/actions/setup
+        with:
+          packages: >-
+            bzip2 ccache clang make ninja-build
+            python-is-python3 qemu-user-static
+          target: ${{ matrix.target }}
+
+      - name: "build cross toolchain"
+        uses: ./.github/actions/build-tools
+        with:
+          target: ${{ matrix.target }}
+
+      - name: "build v8 & librusty_v8"
+        uses: ./.github/actions/build-v8
+        with:
+          target: ${{ matrix.target }}
+          profile: ${{ matrix.profile }}
+
+      - name: "upload artifacts"
+        uses: ./.github/actions/copy-archives
+        with:
+          target: ${{ matrix.target }}
+          profile: ${{ matrix.profile }}
+
+  publish:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: "publish release"
+        uses: ./.github/actions/publish
+    needs: [build]
+    if: startsWith(github.ref, 'refs/tags/')
