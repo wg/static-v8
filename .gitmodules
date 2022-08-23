@@ -3,4 +3,4 @@
 	url = https://github.com/richfelker/musl-cross-make.git
 [submodule "rusty_v8"]
 	path = rusty_v8
-	url = https://github.com/wg/rusty_v8.git
+	url = https://github.com/denoland/rusty_v8.git
